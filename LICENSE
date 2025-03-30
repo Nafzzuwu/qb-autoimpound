@@ -1,24 +1,24 @@
-# 📜 License - GNU General Public License v2.0
+📜 License - GNU General Public License v2.0
 
 `qb-autoimpound` is an open-source script licensed under the **GNU General Public License v2.0 (GPL-2.0)**. This means that you are free to **use, modify, and distribute** this script, as long as you comply with the terms of the license.
 
-## 🔹 Key Terms of GPL-2.0
+ 🔹 Key Terms of GPL-2.0
 
-1️⃣ **Freedom to Use & Modify**  
+1️⃣ Freedom to Use & Modify  
    - You are free to **use this script** on your FiveM server.
    - You can **modify and adapt** the script to fit your server’s needs.
 
-2️⃣ **Distribution & Source Code**  
+2️⃣ Distribution & Source Code  
    - If you distribute a modified version of this script, you **must provide the source code** and keep it under the same GPL-2.0 license.
    - This ensures that the community continues to benefit from improvements and enhancements.
 
-3️⃣ **No Warranty**  
+3️⃣ No Warranty  
    - This script is provided **“as-is”** without any warranty. The developers are **not responsible** for any issues or damages resulting from its use.
 
-## ⚠️ Important Notes
-- **Do not sell or monetize** this script as a paid resource.
-- Always **give proper credit** when using or modifying this script.
-- Respect the **FiveM Terms of Service** when implementing this script on your server.
+⚠️ Important Notes
+- Do not sell or monetize this script as a paid resource.
+- Always give proper credit** when using or modifying this script.
+- Respect the FiveM Terms of Service when implementing this script on your server.
 
 For full license details, see the official GNU GPL-2.0: [https://www.gnu.org/licenses/old-licenses/gpl-2.0.html](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
