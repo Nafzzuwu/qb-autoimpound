@@ -1,3 +1,5 @@
+--Dont Change Anything In This Code!!--
+
 fx_version 'cerulean'
 game 'gta5'
 
