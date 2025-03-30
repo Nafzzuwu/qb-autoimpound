@@ -39,7 +39,11 @@
 
 ### 🔹 **Rename Downloaded Files**
 
-After downloading the zip file, rename it to **``qb-autoimpound``** before adding it to your server. and this code has been made in Indonesian, you can change the language according to your language in the notify code and others.
+After downloading the zip file, rename it to **``qb-autoimpound``** before adding it to your resource server. and this code has been made in Indonesian, you can change the language according to your language in the notify code and others.
+
+### 🔹 **Write In Your server.cfg**
+
+Don't forget to **``ensure qb-autoimpound``** in your server.
 
 ### 🗺️ **Adding a Blip for the Insurance Garage**
 
