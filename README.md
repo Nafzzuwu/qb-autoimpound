@@ -5,7 +5,7 @@ qb-autoimpound is a FiveM script built for the QBCore Framework that manages the
 1️⃣ Automatic Impound System
 Vehicles that are left unused or abandoned for a certain period are automatically sent to the impound garage.
 
-The server can be scheduled to impound vehicles at regular intervals (e.g., every 5 minutes).
+The server can be scheduled to impound vehicles at regular intervals (e.g., every 30 minutes).
 
 Players receive a countdown notification before their vehicles are impounded, such as 100 seconds before impound execution.
 
