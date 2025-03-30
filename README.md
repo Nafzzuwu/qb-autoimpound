@@ -47,7 +47,7 @@ Don't forget to **``ensure qb-autoimpound``** in your server.
 
 ### 🗺️ **Adding a Blip for the Insurance Garage**
 
-To display a **blip on the map** for the insurance garage location, add the following configuration on your qb-garages/config.lua, you can change if you want to locate in another place in your server!
+To display a **blip on the map** for the insurance garage location, add the following configuration on your **``qb-garages/config.lua``**, you can change if you want to locate in another place in your server!
 
 ```lua
 insuransi = {
