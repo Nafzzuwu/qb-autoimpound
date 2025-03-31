@@ -3,7 +3,7 @@ QBCore = exports['qb-core']:GetCoreObject()
 
 -- Configuration
 Config = Config or {}
-Config.ImpoundInterval = 1800 -- 5 minutes (in seconds)
+Config.ImpoundInterval = 3600 -- 30 minutes (in seconds)
 Config.CountdownTime = 100 -- Countdown time before impound (in seconds)
 
 
@@ -326,3 +326,12 @@ RegisterNetEvent('qb-autoimpound:server:SpawnImpoundedVehicle', function(plate)
     end)
 end)
 
+--Added event for player remove money from taking vehicle in impound
+RegisterNetEvent("qb-autoimpound:server:RemoveMoney", function(amount)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+
+    if Player then
+        Player.Functions.RemoveMoney("cash", amount, "Impound Retrieval")
+    end
+end)
