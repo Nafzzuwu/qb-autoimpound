@@ -5,7 +5,7 @@ game 'gta5'
 
 author 'Nafzz'
 description 'Auto Impound System - With Countdown'
-version 'v1.0 Release'
+version 'v1.2 Release'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
