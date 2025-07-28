@@ -3,7 +3,7 @@ QBCore = exports['qb-core']:GetCoreObject()
 
 -- Configuration
 Config = Config or {}
-Config.ImpoundInterval = 3600 -- 30 minutes (in seconds)
+Config.ImpoundInterval = 3600 -- 5 minutes (in seconds)
 Config.CountdownTime = 100 -- Countdown time before impound (in seconds)
 
 
@@ -63,17 +63,16 @@ local function SendWarningMessage(timeLeft)
 
     local message = Config.WarningMessage:gsub("{time}", tostring(timeLeft))
 
-    -- Hapus pesan sebelumnya sebelum menampilkan yang baru
     for _, playerId in ipairs(GetPlayers()) do
-        TriggerClientEvent('chat:clear', playerId) -- Bersihkan chat sebelumnya
+        TriggerClientEvent('chat:clear', playerId)
+
         TriggerClientEvent('chat:addMessage', playerId, {
-            color = {255, 0, 0}, -- Warna merah
-            multiline = true,
-            args = {"[EMERGENCY] 🚨", message}
+            template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
+            args = { message }
         })
     end
 
-    -- Tunggu 1 detik lalu hilangkan pesan secara otomatis (fade-out cepat)
+    -- Tunggu 1 detik jika memang perlu
     Wait(1000)
 end
 
@@ -108,11 +107,10 @@ CreateThread(function()
 
         -- Kirim pesan total kendaraan yang diimpound
         for _, playerId in ipairs(GetPlayers()) do
-            TriggerClientEvent('chat:clear', playerId) -- Bersihkan chat sebelumnya
+            TriggerClientEvent('chat:clear', playerId)
             TriggerClientEvent('chat:addMessage', playerId, {
-                color = {255, 0, 0},
-                multiline = true,
-                args = {"[EMERGENCY] 🚨", "Total " .. impounded .. " kendaraan telah diimpound!"}
+                template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
+                args = { "Total " .. impounded .. " kendaraan telah diimpound!" }
             })
         end
         print(('[AUTO-IMPOUND] %d kendaraan telah berhasil di-impound'):format(impounded))
@@ -134,9 +132,8 @@ AddEventHandler('onResourceStart', function(resource)
     for _, playerId in ipairs(GetPlayers()) do
         TriggerClientEvent('chat:clear', playerId) -- Bersihkan chat sebelumnya
         TriggerClientEvent('chat:addMessage', playerId, {
-            color = {255, 0, 0}, -- Warna merah
-            multiline = true,
-            args = {"[EMERGENCY] 🚨", Config.RestartMessage}
+            template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
+            args = { Config.RestartMessage }
         })
     end
 
@@ -335,3 +332,7 @@ RegisterNetEvent("qb-autoimpound:server:RemoveMoney", function(amount)
         Player.Functions.RemoveMoney("cash", amount, "Impound Retrieval")
     end
 end)
+
+print("qb-autoimpound Loaded! Made By Nafzz")
+
+
