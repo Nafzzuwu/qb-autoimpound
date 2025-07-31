@@ -110,7 +110,7 @@ RegisterNetEvent('qb-autoimpound:client:OpenInsuranceGarage', function()
         for _, v in pairs(impoundedVehicles) do
             vehicles[#vehicles + 1] = {
                 header = v.model .. " - " .. v.plate,
-                txt = "Ambil Kendaraan ($" .. Config.ImpoundRetrievalFee .. ")",
+                txt = "Ambil Kendaraan ($" .. Config.DepotPrice .. ")",
                 params = {
                     event = "qb-autoimpound:client:TakeVehicle", -- Perbaiki event di sini
                     args = { plate = v.plate, model = v.model }
@@ -127,18 +127,18 @@ RegisterNetEvent('qb-autoimpound:client:OpenInsuranceGarage', function()
 end)
 
 RegisterNetEvent("qb-autoimpound:client:TakeVehicle", function(vehicleData)
-    if not vehicleData or not vehicleData.plate then
-        return
-    end
-    local player = QBCore.Functions.GetPlayerData()
-    local fee = Config.ImpoundRetrievalFee
-    
-    if player.money.cash >= fee then
-        TriggerServerEvent("qb-autoimpound:server:ReleaseVehicle", vehicleData.plate, vehicleData.model)
-        TriggerServerEvent("qb-autoimpound:server:RemoveMoney", fee)
-    else
-        QBCore.Functions.Notify("Uang cash tidak mencukupi untuk mengambil kendaraan!", "error")
-    end
+    if not vehicleData or not vehicleData.plate then return end
+
+    QBCore.Functions.TriggerCallback('qb-autoimpound:server:GetCashItem', function(cashAmount)
+        local fee = Config.DepotPrice
+
+        if cashAmount >= fee then
+            TriggerServerEvent("qb-autoimpound:server:ReleaseVehicle", vehicleData.plate, vehicleData.model)
+            TriggerServerEvent("qb-autoimpound:server:RemoveItem", fee)
+        else
+            QBCore.Functions.Notify("Uang cash tidak mencukupi untuk mengambil kendaraan!", "error")
+        end
+    end)
 end)
 
 -- Fungsi untuk menampilkan teks di layar
