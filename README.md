@@ -29,10 +29,6 @@
 - When retrieving an impounded vehicle, it **spawns at a designated location** based on database records.
 - Vehicle properties such as **modifications, colors, and customizations** are correctly applied to ensure the vehicle appears exactly as it was before impound.
 
-### 🔄 **Persistent Impound on Server Restart**
-
-- After a **server restart**, all unused vehicles are automatically **sent to the impound garage**, preventing abandoned vehicles from cluttering the world.
-
 ---
 
 ## 📌 Installation
@@ -68,6 +64,24 @@ insuransi = {
 }
 ```
 
+### 🔄 **Make It Works Impound on Server Restart**
+
+- You need comment this in **``qb-garages/server/main.lua``**
+  ```lua
+    AddEventHandler('onResourceStart', function(resource)
+      if resource == GetCurrentResourceName() then
+          Wait(100)
+          if Config['AutoRespawn'] then
+              MySQL.update('UPDATE player_vehicles SET state = 1 WHERE state = 0', {})
+          else
+              MySQL.update('UPDATE player_vehicles SET depotprice = 500 WHERE state = 0', {})
+          end
+      end
+  end)
+- Make sure in **``qb-garages/config.lua``**
+  ```lua
+  Config.AutoRespawn = false
+- After a **server restart**, all unused vehicles are automatically **sent to the impound garage**, preventing abandoned vehicles from cluttering the world.
 ---
 🎮 Take your **FiveM server** to the next level with `qb-autoimpound` and ensure proper vehicle management! 🚀
 
