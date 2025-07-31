@@ -2,7 +2,7 @@ Config = Config or {}
 
 -- Jenis penyimpanan kendaraan + biaya
 Config.StorageType = "insuransi"
-Config.ImpoundRetrievalFee = 500
+Config.DepotPrice = 120
 
 -- Pengaturan Interval Impound
 Config.ImpoundInterval = 60 * 1000 -- 1 menit dalam milidetik
