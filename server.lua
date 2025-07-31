@@ -3,9 +3,84 @@ QBCore = exports['qb-core']:GetCoreObject()
 
 -- Configuration
 Config = Config or {}
-Config.ImpoundInterval = 3600 -- 5 minutes (in seconds)
+Config.ImpoundInterval = 3600 -- 1 Hour (in seconds)
 Config.CountdownTime = 100 -- Countdown time before impound (in seconds)
 
+
+-- Impound saat restart
+-- Impound kendaraan saat server restart
+-- Event untuk resource restart (ketika masih ada pemain online)
+AddEventHandler('onResourceStart', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    
+    Wait(2000)
+    local vehicles = GetAllVehicles()
+    local impounded = 0
+    for _, vehicle in ipairs(vehicles) do
+        local plate = GetVehicleNumberPlateText(vehicle)
+        local driver = GetPedInVehicleSeat(vehicle, -1)
+        if plate and plate ~= "" and driver == 0 then
+            local result = MySQL.Sync.execute(
+                'UPDATE player_vehicles SET state = 2, garage = ?, depotprice = ? WHERE plate = ? AND state = 0',
+                {Config.StorageType or "insuransi", Config.DepotPrice, plate}
+            )
+            if result > 0 then
+                DeleteEntity(vehicle)
+                impounded = impounded + 1
+            end
+        end
+    end
+end)
+
+-- Event untuk server restart - impound semua kendaraan yang state = 0 (di dunia)
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    
+    if not Config.RestartMessage then
+        print("[ERROR] Config.RestartMessage tidak ditemukan! Pastikan config.lua termuat dengan benar.")
+        return
+    end
+    
+    for _, playerId in ipairs(GetPlayers()) do
+        TriggerClientEvent('chat:clear', playerId)
+        TriggerClientEvent('chat:addMessage', playerId, {
+            template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
+            args = { Config.RestartMessage }
+        })
+    end
+    
+    local result = MySQL.Sync.execute(
+        'UPDATE player_vehicles SET state = 2, garage = ?, depotprice = ? WHERE state = 0',
+        {Config.StorageType or "insuransi", Config.DepotPrice or 120}
+    )
+    
+    if result > 0 then
+        for _, playerId in ipairs(GetPlayers()) do
+            TriggerClientEvent('chat:clear', playerId)
+            TriggerClientEvent('chat:addMessage', playerId, {
+                color = {255, 0, 0},
+                multiline = true,
+                template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
+                args = {"Total " .. result .. " kendaraan telah diimpound saat restart!"}
+            })
+        end
+        print(('[AUTO-IMPOUND] %d kendaraan telah di-impound karena server akan restart'):format(result))
+    end
+end)
+
+-- Startup cleanup - impound kendaraan yang mungkin tertinggal dari restart sebelumnya
+Citizen.CreateThread(function()
+    Wait(10000) -- 10 detik setelah server start
+    
+    local result = MySQL.Sync.execute(
+        'UPDATE player_vehicles SET state = 2, garage = ?, depotprice = ? WHERE state = 0',
+        {Config.StorageType or "insuransi", Config.DepotPrice or 120}
+    )
+    
+    if result > 0 then
+        print(('[AUTO-IMPOUND] %d kendaraan telah di-impound karena server restart'):format(result))
+    end
+end)
 
 -- /impoundall command to impound all unused vehicles
 RegisterCommand("impoundall", function(source, args, rawCommand)
@@ -15,11 +90,11 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
         TriggerClientEvent('QBCore:Notify', source, "Kamu tidak memiliki izin untuk menggunakan perintah ini!", "error", 5000)
         return
     end
-
+    
     local vehicles = GetAllVehicles()
     local count = 0
     local pending = 0 -- Untuk melacak jumlah operasi database yang sedang berlangsung
-
+    
     for _, vehicle in ipairs(vehicles) do
         local plate = GetVehicleNumberPlateText(vehicle)
         local driver = GetPedInVehicleSeat(vehicle, -1)
@@ -27,32 +102,29 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
         if plate and plate ~= "" and driver == 0 then
             plate = plate:gsub("%s+", "")
             pending = pending + 1 -- Tambahkan operasi yang sedang berlangsung
-
-            MySQL.Async.execute("UPDATE player_vehicles SET state = 2, garage = 'insuransi' WHERE plate = ?", {plate}, function(affectedRows)
+            MySQL.Async.execute("UPDATE player_vehicles SET state = 2, garage = 'insuransi', depotprice = ? WHERE plate = ?", {Config.DepotPrice, plate}, function(affectedRows)
                 if affectedRows > 0 then
                     if DoesEntityExist(vehicle) then
                         DeleteEntity(vehicle)
                         count = count + 1
-                        print("[AUTO-IMPOUND] Kendaraan dengan plat " .. plate .. " telah diimpound.")
+                        print("[AUTO-IMPOUND] Kendaraan dengan plat " .. plate .. " telah diimpound dengan biaya depot $" .. Config.DepotPrice)
                     end
                 end
-
                 pending = pending - 1 -- Kurangi operasi yang sudah selesai
                 if pending == 0 then -- Jika semua operasi selesai, kirim notifikasi
                     if source ~= 0 then
-                        TriggerClientEvent('QBCore:Notify', source, count .. " kendaraan berhasil diimpound!", "success", 5000)
+                        TriggerClientEvent('QBCore:Notify', source, count .. " kendaraan berhasil diimpound dengan biaya depot $" .. Config.DepotPrice .. "!", "success", 5000)
                     end
                 end
             end)
         end
     end
-
+    
     -- Jika tidak ada kendaraan yang perlu diimpound, langsung kirim notifikasi
     if pending == 0 then
         TriggerClientEvent('QBCore:Notify', source, "Tidak ada kendaraan yang bisa diimpound!", "error", 5000)
     end
 end, false)
-
 
 -- Fungsi untuk mengirim peringatan ke semua pemain melalui chat darurat
 local function SendWarningMessage(timeLeft)
@@ -95,9 +167,9 @@ CreateThread(function()
             local driver = GetPedInVehicleSeat(vehicle, -1)
             if plate and plate ~= "" and driver == 0 then
                 local result = MySQL.Sync.execute(
-                    'UPDATE player_vehicles SET state = 2, garage = ? WHERE plate = ? AND state = 0',
-                    {Config.StorageType, plate}
-                )
+    'UPDATE player_vehicles SET state = 2, garage = ?, depotprice = ? WHERE plate = ? AND state = 0',
+    				{Config.StorageType or "insuransi", Config.DepotPrice, plate}
+				)
                 if result > 0 then
                     DeleteEntity(vehicle)
                     impounded = impounded + 1
@@ -117,63 +189,6 @@ CreateThread(function()
     end
 end)
 
--- Impound saat restart
--- Impound kendaraan saat server restart
-AddEventHandler('onResourceStart', function(resource)
-    if resource ~= GetCurrentResourceName() then return end
-
-    -- Pastikan Config.RestartMessage tersedia
-    if not Config.RestartMessage then
-        print("[ERROR] Config.RestartMessage tidak ditemukan! Pastikan config.lua termuat dengan benar.")
-        return
-    end
-
-    -- Kirim pesan peringatan restart ke semua pemain
-    for _, playerId in ipairs(GetPlayers()) do
-        TriggerClientEvent('chat:clear', playerId) -- Bersihkan chat sebelumnya
-        TriggerClientEvent('chat:addMessage', playerId, {
-            template = '<div class="chat-message emergency">[EMERGENCY] 🚨 {0}</div>',
-            args = { Config.RestartMessage }
-        })
-    end
-
-    -- Tunggu 5 detik sebelum mulai impound kendaraan
-    Wait(2000)
-
-    local vehicles = GetAllVehicles()
-    local impounded = 0
-
-    for _, vehicle in ipairs(vehicles) do
-        local plate = GetVehicleNumberPlateText(vehicle)
-        local driver = GetPedInVehicleSeat(vehicle, -1)
-
-        -- Impound hanya jika kendaraan tidak dikendarai pemain
-        if plate and plate ~= "" and driver == 0 then
-            local result = MySQL.Sync.execute(
-                'UPDATE player_vehicles SET state = 2, garage = ? WHERE plate = ? AND state = 0',
-                {Config.StorageType, plate}
-            )
-            if result > 0 then
-                DeleteEntity(vehicle)
-                impounded = impounded + 1
-            end
-        end
-    end
-
-    -- Kirim pesan jumlah kendaraan yang diimpound ke semua pemain
-    for _, playerId in ipairs(GetPlayers()) do
-        TriggerClientEvent('chat:clear', playerId) -- Bersihkan chat sebelumnya
-        TriggerClientEvent('chat:addMessage', playerId, {
-            color = {255, 0, 0},
-            multiline = true,
-            args = {"[EMERGENCY] 🚨", "Total " .. impounded .. " kendaraan telah diimpound saat restart!"}
-        })
-    end
-
-    print(('[AUTO-IMPOUND] %d kendaraan telah di-impound karena server restart'):format(impounded))
-end)
-
----
 local function GetPlayerByCitizenID(citizenid)
     for _, playerId in ipairs(GetPlayers()) do
         local Player = QBCore.Functions.GetPlayer(tonumber(playerId))
@@ -316,7 +331,7 @@ RegisterNetEvent('qb-autoimpound:server:SpawnImpoundedVehicle', function(plate)
             end
 
             TriggerClientEvent('qb-autoimpound:client:SpawnVehicle', src, vehicleProps, vehicleMods)
-            MySQL.Async.execute('UPDATE player_vehicles SET state = 0 WHERE plate = ?', {plate})
+            MySQL.Async.execute('UPDATE player_vehicles SET state = 0, depotprice = 0 WHERE plate = ?', {plate})
         else
             print("⚠️ ERROR: Kendaraan tidak ditemukan di database untuk plate:", plate)
         end
