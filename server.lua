@@ -229,7 +229,7 @@ RegisterNetEvent('qb-autoimpound:server:ReleaseVehicle', function(plate, model)
             end
             
             -- Pastikan kendaraan hanya diubah statusnya jika masih diimpound
-            MySQL.Async.execute('UPDATE player_vehicles SET state = 0 WHERE plate = ? AND state = 2', {plate}, function(rowsChanged)
+            MySQL.Async.execute('UPDATE player_vehicles SET state = 0, depotprice = 0 WHERE plate = ? AND state = 2', {plate}), function(rowsChanged)
                 if rowsChanged > 0 then
                     -- Kirim data kendaraan ke client untuk di-spawn
                     TriggerClientEvent('qb-autoimpound:client:SpawnVehicle', src, {
