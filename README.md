@@ -23,6 +23,8 @@
 - Simple **"E" key interaction** to open the **impound garage menu**, eliminating the need for `qb-target`.
 - If no vehicles are available, players receive a **clear notification**:
   > "Your vehicle is not in the insurance garage."
+<img width="952" height="481" alt="peview" src="https://github.com/user-attachments/assets/3771e4b2-cf40-4744-96bd-9259b153a2f6" />
+
 
 ### 🚘 **Accurate Vehicle Restoration**
 
