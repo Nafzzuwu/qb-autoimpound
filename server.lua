@@ -6,10 +6,6 @@ Config = Config or {}
 Config.ImpoundInterval = 3600 -- 1 Hour (in seconds)
 Config.CountdownTime = 100 -- Countdown time before impound (in seconds)
 
-
--- Impound saat restart
--- Impound kendaraan saat server restart
--- Event untuk resource restart (ketika masih ada pemain online)
 AddEventHandler('onResourceStart', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     
@@ -70,7 +66,7 @@ end)
 
 -- Startup cleanup - impound kendaraan yang mungkin tertinggal dari restart sebelumnya
 Citizen.CreateThread(function()
-    Wait(10000) -- 10 detik setelah server start
+    Wait(10000)
     
     local result = MySQL.Sync.execute(
         'UPDATE player_vehicles SET state = 2, garage = ?, depotprice = ? WHERE state = 0',
@@ -93,7 +89,7 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
     
     local vehicles = GetAllVehicles()
     local count = 0
-    local pending = 0 -- Untuk melacak jumlah operasi database yang sedang berlangsung
+    local pending = 0
     
     for _, vehicle in ipairs(vehicles) do
         local plate = GetVehicleNumberPlateText(vehicle)
@@ -101,7 +97,7 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
         
         if plate and plate ~= "" and driver == 0 then
             plate = plate:gsub("%s+", "")
-            pending = pending + 1 -- Tambahkan operasi yang sedang berlangsung
+            pending = pending + 1
             MySQL.Async.execute("UPDATE player_vehicles SET state = 2, garage = 'insuransi', depotprice = ? WHERE plate = ?", {Config.DepotPrice, plate}, function(affectedRows)
                 if affectedRows > 0 then
                     if DoesEntityExist(vehicle) then
@@ -110,8 +106,8 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
                         print("[AUTO-IMPOUND] Kendaraan dengan plat " .. plate .. " telah diimpound dengan biaya depot $" .. Config.DepotPrice)
                     end
                 end
-                pending = pending - 1 -- Kurangi operasi yang sudah selesai
-                if pending == 0 then -- Jika semua operasi selesai, kirim notifikasi
+                pending = pending - 1
+                if pending == 0 then
                     if source ~= 0 then
                         TriggerClientEvent('QBCore:Notify', source, count .. " kendaraan berhasil diimpound dengan biaya depot $" .. Config.DepotPrice .. "!", "success", 5000)
                     end
@@ -120,13 +116,11 @@ RegisterCommand("impoundall", function(source, args, rawCommand)
         end
     end
     
-    -- Jika tidak ada kendaraan yang perlu diimpound, langsung kirim notifikasi
     if pending == 0 then
-        TriggerClientEvent('QBCore:Notify', source, "Tidak ada kendaraan yang bisa diimpound!", "error", 5000)
+        TriggerClientEvent('QBCore:Notify', source, "Tidak ada kendaraan yang harus diimpound!", "error", 5000)
     end
 end, false)
 
--- Fungsi untuk mengirim peringatan ke semua pemain melalui chat darurat
 local function SendWarningMessage(timeLeft)
     if not Config.WarningMessage then
         print("[ERROR] Config.WarningMessage tidak ditemukan! Pastikan config.lua termuat dengan benar.")
@@ -143,19 +137,17 @@ local function SendWarningMessage(timeLeft)
             args = { message }
         })
     end
-
-    -- Tunggu 1 detik jika memang perlu
     Wait(1000)
 end
 
 -- Auto Impound Regular
 CreateThread(function()
     while true do
-        Wait((Config.ImpoundInterval - Config.CountdownTime) * 1000) -- Mulai hitungan mundur
+        Wait((Config.ImpoundInterval - Config.CountdownTime) * 1000)
 
-        for i = Config.CountdownTime, 1, -5 do -- Menampilkan pesan setiap 5 detik
+        for i = Config.CountdownTime, 1, -5 do
             SendWarningMessage(i)
-            Wait(5000) -- Tunggu 5 detik sebelum pesan baru muncul
+            Wait(5000)
         end
 
         -- Proses impound kendaraan
@@ -199,8 +191,6 @@ local function GetPlayerByCitizenID(citizenid)
     return nil
 end
 
-
--- Mengeluarkan kendaraan dari impound
 RegisterNetEvent('qb-autoimpound:server:ReleaseVehicle', function(plate, model)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -208,19 +198,16 @@ RegisterNetEvent('qb-autoimpound:server:ReleaseVehicle', function(plate, model)
     
     MySQL.Async.fetchAll('SELECT * FROM player_vehicles WHERE plate = ?', {plate}, function(result)
         if result and result[1] then
-            -- Check if mods exists and is a valid JSON string
             local vehicleProps = nil
             if result[1].mods and type(result[1].mods) == "string" then
                 vehicleProps = json.decode(result[1].mods)
             elseif result[1].vehicle and type(result[1].vehicle) == "string" then
-                -- Try to use vehicle field if it contains JSON data
                 local success, decodedVehicle = pcall(json.decode, result[1].vehicle)
                 if success and type(decodedVehicle) == "table" then
                     vehicleProps = decodedVehicle
                 end
             end
             
-            -- If we couldn't get vehicle properties, create a basic structure
             if not vehicleProps then
                 vehicleProps = {
                     model = model,
@@ -228,13 +215,11 @@ RegisterNetEvent('qb-autoimpound:server:ReleaseVehicle', function(plate, model)
                 }
             end
             
-            -- Pastikan kendaraan hanya diubah statusnya jika masih diimpound
             MySQL.Async.execute('UPDATE player_vehicles SET state = 0, depotprice = 0 WHERE plate = ? AND state = 2', {plate}, function(rowsChanged)
                 if rowsChanged > 0 then
-                    -- Kirim data kendaraan ke client untuk di-spawn
                     TriggerClientEvent('qb-autoimpound:client:SpawnVehicle', src, {
                         plate = plate,
-                        model = model or result[1].vehicle, -- Use model from argument or fallback to db value
+                        model = model or result[1].vehicle,
                         properties = vehicleProps
                     })
                 else
